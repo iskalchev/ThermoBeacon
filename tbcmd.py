@@ -34,4 +34,4 @@ args = parser.parse_args()
 
 print(args.command)
 
-print(args)
+
