@@ -1,1 +1,2 @@
-# ThermoBeacon
+#  Bluetooth scanner for ThermoBeacon devices.
+
