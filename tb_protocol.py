@@ -22,6 +22,7 @@ class TBMessage:
     def __init__(self, msg_type, id, bvalue):
         if id not in [0x10, 0x11]:
             raise ValueError()
+        self.id = id
         self.msg_type = msg_type
         self.btn = False if bvalue[1]==0 else True
         self.mac = int.from_bytes(bvalue[2:8],byteorder='little')

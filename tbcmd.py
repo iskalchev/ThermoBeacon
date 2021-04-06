@@ -73,15 +73,16 @@ def detection_callback(device, advertisement_data):
         #bvalue=bytearray([key&0xff, (key>>8)&0xff]) + msg[key]
         bvalue = msg[key]
         #print(bvalue.hex())
+        mac = device.address.lower()
         if len(bvalue)==18:
             data = TBMsgAdvertise(key, bvalue)
             #print(device.address, data.tmp, data.hum, data.upt)
-            print('[{0}] T= {1:5.2f}\xb0C, H = {2:3.2f}%, Button:{4}, Battery : {5:02.0f}%, UpTime = {3:8.0f}s'.\
-                  format(device.address, data.tmp, data.hum, data.upt, 'On ' if data.btn else 'Off', data.btr))
+            print('[{0}] [{6:02x}] T= {1:5.2f}\xb0C, H = {2:3.2f}%, Button:{4}, Battery : {5:02.0f}%, UpTime = {3:8.0f}s'.\
+                  format(mac, data.tmp, data.hum, data.upt, 'On ' if data.btn else 'Off', data.btr, data.id))
         else:
             data = TBMsgMinMax(key, bvalue)
-            print('[{0}] Max={1:5.2f}\xb0C at {2:.0f}s, Min={3:5.2f}\xb0C at {4:.0f}s'.\
-                  format(device.address, data.max, data.max_t, data.min, data.min_t))
+            print('[{0}] [{5:02x}] Max={1:5.2f}\xb0C at {2:.0f}s, Min={3:5.2f}\xb0C at {4:.0f}s'.\
+                  format(mac, data.max, data.max_t, data.min, data.min_t, data.id))
 
 
 if __name__ == '__main__':
