@@ -2,6 +2,10 @@
 
 import sys, re, json, asyncio
 from argparse import ArgumentParser, Namespace
+
+from bleak import BleakScanner
+from tb_protocol import TBMsgAdvertise, TBMsgMinMax
+
   
 def mac_addr(x):
     if not re.match("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", x.lower()):
@@ -32,6 +36,54 @@ sub.add_argument('-t', type=int, choices=range(10,31), default=10, metavar='Time
 
 args = parser.parse_args()
 
-print(args.command)
+#print(args.command)
 
+
+def main():
+    cmd = args.command
+    if cmd=='scan':
+        loop = asyncio.get_event_loop()
+        try:
+            loop.run_until_complete(scan())
+        except KeyboardInterrupt:
+            print()
+            return
+
+async def scan():
+    scanner = BleakScanner()
+    scanner.register_detection_callback(detection_callback)
+    await scanner.start()
+    await asyncio.sleep(540)
+    await scanner.stop()
+
+
+def detection_callback(device, advertisement_data):
+    #('RSSI:', -88, AdvertisementData(local_name='ThermoBeacon', manufacturer_data={16: b'\x00\x00\x17\x1a\x00\x00\xac\xfap\x01q\xc8\x01\x00X\x01\x84\x18\x08\x00'}, service_uuids=['0000fff0-0000-1000-8000-00805f9b34fb']))
+    name = advertisement_data.local_name
+    if name is None:
+        return
+    if name != 'ThermoBeacon':
+        return
+    msg = advertisement_data.manufacturer_data
+    #print(bytes.fromhex(msg))
+    
+    #print(device.address, type(device))
+    for key in msg.keys():
+        #print(str(key) +' '+msg[key].hex())
+        #bvalue=bytearray([key&0xff, (key>>8)&0xff]) + msg[key]
+        bvalue = msg[key]
+        #print(bvalue.hex())
+        if len(bvalue)==18:
+            data = TBMsgAdvertise(key, bvalue)
+            #print(device.address, data.tmp, data.hum, data.upt)
+            print('[{0}] T= {1:5.2f}\xb0C, H = {2:3.2f}%, Button:{4}, Battery : {5:02.0f}%, UpTime = {3:8.0f}s'.\
+                  format(device.address, data.tmp, data.hum, data.upt, 'On ' if data.btn else 'Off', data.btr))
+        else:
+            data = TBMsgMinMax(key, bvalue)
+            print('[{0}] Max={1:5.2f}\xb0C at {2:.0f}s, Min={3:5.2f}\xb0C at {4:.0f}s'.\
+                  format(device.address, data.max, data.max_t, data.min, data.min_t))
+
+
+if __name__ == '__main__':
+    main()
 
