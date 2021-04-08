@@ -94,6 +94,15 @@ def detection_callback(device, advertisement_data):
 
 '''
 '''
+def dump(address):
+    try:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(_dump(address))
+    except bleak.exc.BleakDBusError as dber:
+        print(dber.dbus_error)
+    except Exception as exc:
+        print('///'+str(exc))
+
 async def _dump(address):
     client = BleakClient(address)
     try:
@@ -111,7 +120,7 @@ async def _dump(address):
         resp = TBMsgQuery(data)
         print('01:'+data.hex())
 
-        await client.start_notify(RX_CHAR_UUID, callback)
+        await client.start_notify(RX_CHAR_UUID, dump_callback)
         cmd_dump = bytes([TB_COMMAND_DUMP, 0, 0, resp.count&0xff, (resp.count>>8)&0xff, (resp.count>>16)&0xff, 1])
         cnt = 0
         while cnt<resp.count:
@@ -127,26 +136,19 @@ async def _dump(address):
     finally:
         await client.disconnect()
 
-def dump(address):
-    try:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(_dump(address))
-    except bleak.exc.BleakDBusError as dber:
-        print(dber.dbus_error)
-    except Exception as exc:
-        print('///'+str(exc))
-
-def callback(sender: int, data: bytearray):
+def dump_callback(sender: int, data: bytearray):
     if data is None:
         return
     try:
         hdata = data.hex()
         msg = TBMsgDump(data)
         print(msg.offset, msg.count, msg.data)
-        print(f"{sender}: {hdata}")
+        #print(f"{sender}: {hdata}")
     except Exception as exc:
         print(str(exc))
 
+'''
+'''
 def identify(address):
     try:
         loop = asyncio.get_event_loop()
