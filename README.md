@@ -1,7 +1,7 @@
 #  Bluetooth scanner for ThermoBeacon BLE devices.
 
 ## Prerequisites
-### 1. This command line tool requires Python 3.7 or grter.
+### 1. This command line tool requires Python 3.7 or greater.
 ### 2. Install [bleak Python library](https://github.com/hbldh/bleak)
     $ sudo pip3 install bleak
 
