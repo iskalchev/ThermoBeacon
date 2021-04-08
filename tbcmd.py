@@ -5,7 +5,7 @@ from argparse import ArgumentParser, Namespace
 import bleak
 
 from bleak import BleakClient, BleakScanner
-from tb_protocol import TBMsgAdvertise, TBMsgMinMax, TBMsgQuery #, TBCmdQuery, TBCmdDump
+#from tb_protocol import TBMsgAdvertise, TBMsgMinMax, TBMsgQuery #, TBCmdQuery, TBCmdDump
 from tb_protocol import *
 
 #Transmit Handle 0x0021
@@ -81,12 +81,12 @@ def detection_callback(device, advertisement_data):
         #print(bvalue.hex())
         mac = device.address.lower()
         if len(bvalue)==18:
-            data = TBMsgAdvertise(key, bvalue)
+            data = TBAdvData(key, bvalue)
             #print(device.address, data.tmp, data.hum, data.upt)
             print('[{0}] [{6:02x}] T= {1:5.2f}\xb0C, H = {2:3.2f}%, Button:{4}, Battery : {5:02.0f}%, UpTime = {3:8.0f}s'.\
                   format(mac, data.tmp, data.hum, data.upt, 'On ' if data.btn else 'Off', data.btr, data.id))
         else:
-            data = TBMsgMinMax(key, bvalue)
+            data = TBAdvMinMax(key, bvalue)
             print('[{0}] [{5:02x}] Max={1:5.2f}\xb0C at {2:.0f}s, Min={3:5.2f}\xb0C at {4:.0f}s'.\
                   format(mac, data.max, data.max_t, data.min, data.min_t, data.id))
 
@@ -141,7 +141,7 @@ def callback(sender: int, data: bytearray):
     try:
         hdata = data.hex()
         msg = TBMsgDump(data)
-        print(msg.count, msg.data)
+        print(msg.offset, msg.count, msg.data)
         print(f"{sender}: {hdata}")
     except Exception as exc:
         print(str(exc))
