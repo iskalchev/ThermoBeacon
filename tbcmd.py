@@ -5,7 +5,6 @@ from argparse import ArgumentParser, Namespace
 import bleak
 
 from bleak import BleakClient, BleakScanner
-#from tb_protocol import TBMsgAdvertise, TBMsgMinMax, TBMsgQuery #, TBCmdQuery, TBCmdDump
 from tb_protocol import *
 
 #Transmit Handle 0x0021
@@ -65,25 +64,18 @@ async def scan():
 
 
 def detection_callback(device, advertisement_data):
-    #('RSSI:', -88, AdvertisementData(local_name='ThermoBeacon', manufacturer_data={16: b'\x00\x00\x17\x1a\x00\x00\xac\xfap\x01q\xc8\x01\x00X\x01\x84\x18\x08\x00'}, service_uuids=['0000fff0-0000-1000-8000-00805f9b34fb']))
     name = advertisement_data.local_name
     if name is None:
         return
     if name != 'ThermoBeacon':
         return
     msg = advertisement_data.manufacturer_data
-    #print(bytes.fromhex(msg))
-    
-    #print(device.address, type(device))
+    #print(device.rssi)
     for key in msg.keys():
-        #print(str(key) +' '+msg[key].hex())
-        #bvalue=bytearray([key&0xff, (key>>8)&0xff]) + msg[key]
         bvalue = msg[key]
-        #print(bvalue.hex())
         mac = device.address.lower()
         if len(bvalue)==18:
             data = TBAdvData(key, bvalue)
-            #print(device.address, data.tmp, data.hum, data.upt)
             print('[{0}] [{6:02x}] T= {1:5.2f}\xb0C, H = {2:3.2f}%, Button:{4}, Battery : {5:02.0f}%, UpTime = {3:8.0f}s'.\
                   format(mac, data.tmp, data.hum, data.upt, 'On ' if data.btn else 'Off', data.btr, data.id))
         else:
