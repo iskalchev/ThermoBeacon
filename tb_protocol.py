@@ -112,7 +112,11 @@ class TBCmdBase:
 
     def get_params(self):
         return bytes()
-        
+
+class TBCmdIdentify(TBCmdBase):
+    def __init__(self):
+        TBCmdBase.__init__(self, TB_COMMAND_IDENTIFY)
+   
 class TBCmdQuery(TBCmdBase):
     def __init__(self):
         TBCmdBase.__init__(self, TB_COMMAND_QUERY)
