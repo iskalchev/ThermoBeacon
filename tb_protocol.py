@@ -64,9 +64,58 @@ class TBMsgMinMax(TBMessage):
         self.min = int.from_bytes(bvalue[14:16],byteorder='little')/16.0
         self.min_t = int.from_bytes(bvalue[16:20],byteorder='little')
 
+'''
+ 
+'''
 
+class TBMsgQuery:
+    def __init__(self, bvalue):
+        self.msg = bvalue[0]
+        self.count = int.from_bytes(bvalue[1:3],byteorder='little')
+
+'''
+'''
+
+class TBMsgDump:
+    def __init__(self, bvalue):
+        self.msg = bvalue[0]
+        self.offset = int.from_bytes(bvalue[1:5], 'little')
+        self.count = bvalue[5]
+        self.data = []
+        for c in range(self.count):
+            t=int.from_bytes(bvalue[6+c*2:6+c*2+2], 'little')/16.
+            h=int.from_bytes(bvalue[2*self.count+6+c*2:2*self.count+6+c*2+2],'little')/16.
+            self.data.append({'t':t, 'h':h})
+
+'''
+Commands
+'''
+
+TB_COMMAND_QUERY      = 0x01
 TB_COMMAND_RESET      = 0x02
 TB_COMMAND_TEMP_SCALE = 0x03
 TB_COMMAND_IDENTIFY   = 0x04
-TB_COMMAND_DUMPALL    = 0x07
+TB_COMMAND_DUMP       = 0x07
 
+class TBCmdBase:
+    def __init__(self, cmd):
+        self.cmd = cmd
+
+    def get_msg(self):
+        return bytes([self.cmd])+self.get_params()
+
+    def get_params(self):
+        return bytes()
+        
+class TBCmdQuery(TBCmdBase):
+    def __init__(self):
+        TBCmdBase.__init__(self, TB_COMMAND_QUERY)
+
+class TBCmdDump(TBCmdBase):
+    def __init__(self, start, count=15):
+        TBCmdBase.__init__(self, TB_COMMAND_DUMP)
+        self.start = start
+        self.count = count
+
+    def get_params(self):
+        return self.start.to_bytes(4,'little') + self.count.to_bytes(4,'little')
