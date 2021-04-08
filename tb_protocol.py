@@ -1,4 +1,6 @@
 '''
+ADVERTISING MESSAGES
+
 Decode Manufacturer specific data from BLE Advertising message
 
 Message length: 20 bytes
@@ -18,7 +20,7 @@ bytes | content
 MSG_ADVERTISE_DATA   = 1
 MSG_ADVERTISE_MINMAX = 2
 
-class TBMessage:
+class TBAdvertisingMessage:
     def __init__(self, msg_type, id, bvalue):
         if id not in [0x10, 0x11]:
             raise ValueError()
@@ -27,9 +29,9 @@ class TBMessage:
         self.btn = False if bvalue[1]==0 else True
         self.mac = int.from_bytes(bvalue[2:8],byteorder='little')
 
-class TBMsgAdvertise(TBMessage):
+class TBAdvData(TBAdvertisingMessage):
     def __init__(self, id, bvalue):
-        TBMessage.__init__(self, MSG_ADVERTISE_DATA, id, bvalue)
+        TBAdvertisingMessage.__init__(self, MSG_ADVERTISE_DATA, id, bvalue)
 
         self.btr = int.from_bytes(bvalue[8:10],byteorder='little')
         self.btr = self.btr*100/3400
@@ -55,9 +57,9 @@ bytes | content
 18-21 | min temp time (s)
 '''
 
-class TBMsgMinMax(TBMessage):
+class TBAdvMinMax(TBAdvertisingMessage):
     def __init__(self, id, bvalue):
-        TBMessage.__init__(self, MSG_ADVERTISE_MINMAX, id, bvalue)
+        TBAdvertisingMessage.__init__(self, MSG_ADVERTISE_MINMAX, id, bvalue)
         
         self.max = int.from_bytes(bvalue[8:10],byteorder='little')/16
         self.max_t = int.from_bytes(bvalue[10:14],byteorder='little')
@@ -65,7 +67,16 @@ class TBMsgMinMax(TBMessage):
         self.min_t = int.from_bytes(bvalue[16:20],byteorder='little')
 
 '''
+COMMANDS
  
+'''
+TB_COMMAND_QUERY      = 0x01
+TB_COMMAND_RESET      = 0x02
+TB_COMMAND_TEMP_SCALE = 0x03
+TB_COMMAND_IDENTIFY   = 0x04
+TB_COMMAND_DUMP       = 0x07
+
+'''
 '''
 
 class TBMsgQuery:
@@ -91,11 +102,6 @@ class TBMsgDump:
 Commands
 '''
 
-TB_COMMAND_QUERY      = 0x01
-TB_COMMAND_RESET      = 0x02
-TB_COMMAND_TEMP_SCALE = 0x03
-TB_COMMAND_IDENTIFY   = 0x04
-TB_COMMAND_DUMP       = 0x07
 
 class TBCmdBase:
     def __init__(self, cmd):
@@ -114,8 +120,8 @@ class TBCmdQuery(TBCmdBase):
 class TBCmdDump(TBCmdBase):
     def __init__(self, start, count=15):
         TBCmdBase.__init__(self, TB_COMMAND_DUMP)
-        self.start = start
-        self.count = count
+        self.offset = start
+        self.count  = count
 
     def get_params(self):
-        return self.start.to_bytes(4,'little') + self.count.to_bytes(4,'little')
+        return self.offset.to_bytes(4,'little') + self.count.to_bytes(4,'little')
