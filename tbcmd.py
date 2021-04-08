@@ -49,7 +49,8 @@ def main():
             print()
             return
     elif cmd=='identify':
-        pass
+        identify(args.mac)
+        return
     elif cmd=='dump':
         dump(args.mac)
         return
@@ -146,6 +147,30 @@ def callback(sender: int, data: bytearray):
     except Exception as exc:
         print(str(exc))
 
+def identify(address):
+    try:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(_identify(address))
+    except bleak.exc.BleakDBusError as dber:
+        print(dber.dbus_error)
+    except Exception as exc:
+        print('///'+str(exc))
+
+async def _identify(address):
+    client = BleakClient(address)
+    try:
+        await client.connect(timeout=10)
+        print('connectd')
+    except Exception as exc:
+        print('exception ' + str(exc))
+        return
+
+    try:
+        cmd = TBCmdIdentify()
+        await client.write_gatt_char(TX_CHAR_UUID, cmd.get_msg())
+    finally:
+        await client.disconnect()
+    
 if __name__ == '__main__':
     main()
 
