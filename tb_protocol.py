@@ -62,10 +62,14 @@ class TBAdvMinMax(TBAdvertisingMessage):
         TBAdvertisingMessage.__init__(self, MSG_ADVERTISE_MINMAX, id, bvalue)
         
         self.max = int.from_bytes(bvalue[8:10],byteorder='little')/16
+        if self.max>4000:
+            self.max -= 4096
         self.max_t = int.from_bytes(bvalue[10:14],byteorder='little')
         self.min = int.from_bytes(bvalue[14:16],byteorder='little')/16.0
+        if self.min>4000:
+            self.min -= 4096
         self.min_t = int.from_bytes(bvalue[16:20],byteorder='little')
-
+        
 '''
 COMMANDS
  
