@@ -43,8 +43,8 @@ MSG_ADVERTISE_MINMAX = 2
 
 class TBAdvertisingMessage:
     def __init__(self, msg_type, id, bvalue):
-        if id not in [0x10, 0x11]:
-            raise ValueError()
+#        if id not in [0x10, 0x11, 0x15]:
+#            raise ValueError()
         self.id = id
         self.msg_type = msg_type
         self.btn = False if bvalue[1]==0 else True
