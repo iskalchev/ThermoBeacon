@@ -4,6 +4,9 @@ import sys, re, json, asyncio
 from argparse import ArgumentParser, Namespace
 import bleak
 
+import paho.mqtt.client as mqtt
+ 
+
 from bleak import BleakClient, BleakScanner
 from tb_protocol import *
 
@@ -18,10 +21,10 @@ def mac_addr(x):
         raise ValueError()
     return x
 
- 
+
 parser = ArgumentParser()
 subparsers = parser.add_subparsers(help='action', dest='command', required=True)
- 
+
 sub = subparsers.add_parser('scan', help = "Scan for ThermoBeacon devices")
 sub.add_argument('-mac', type=mac_addr, required=False)
 sub.add_argument('-t', type=int, default = 20, metavar='<Scan duration, seconds>', required=False)
@@ -31,6 +34,15 @@ sub = subparsers.add_parser('query', help = "Query device for details")
 sub.add_argument('-mac', type=mac_addr, required=True)
 sub = subparsers.add_parser('dump', help = "Dump logged data")
 sub.add_argument('-mac', type=mac_addr, required=True)
+sub = subparsers.add_parser('query', help = "Query device for details")
+sub.add_argument('-mac', type=mac_addr, required=True)
+sub.add_argument('-t', type=int, default = 3, metavar='<Query duration, seconds>', required=False)
+sub = subparsers.add_parser('mqtt', help = "Send data via mqtt")
+sub.add_argument('-mac', type=mac_addr, required=True)
+sub.add_argument('-t', type=int, default = 3, metavar='<Query duration, seconds>', required=False)
+sub.add_argument('-broker', required=True)
+sub.add_argument('-port', type=int, required=True)
+sub.add_argument('-topic', required=True)
 
 
 args = parser.parse_args()
@@ -53,7 +65,14 @@ def main():
     elif cmd=='dump':
         dump(args.mac)
         return
-    print('Not yet implemented')
+    elif cmd=='query':
+        Result = query(args.mac, args.t)                
+        print(Result)
+    elif cmd=='mqtt':
+        send_mqtt(args.mac, args.t, args.broker, args.port, args.topic)
+    else:
+        print('Not yet implemented')
+
 
 async def scan():
     scanner = BleakScanner()
@@ -164,7 +183,78 @@ async def _identify(address):
         await client.write_gatt_char(TX_CHAR_UUID, cmd.get_msg())
     finally:
         await client.disconnect()
-    
+
+'''
+Thanks to Andreas Schmitz (Andy) two new commands implemented below: query, mqtt. 
+The mqtt command queries the values and then publishes via mqtt
+'''
+def send_mqtt(SensorMac, SensorQueryDuration_s, broker, port, topic):
+    Result = str(query(SensorMac, SensorQueryDuration_s))
+    if len(Result) == 0:
+        return		
+    client = mqtt.Client()
+    client.connect(host = broker, port = port)
+    #FIXME add user, passwd
+    client.loop_start()
+    client.publish(topic = topic, payload = Result, qos = 1)
+    client.disconnect()
+
+'''
+'''
+def query(SensorMac, SensorQueryDuration_s):
+	#Not sure how to return values from a BleakScanner::callback
+	#function. Thus using global variables.
+    global QueryResults
+    QueryResults = dict()
+    global TargetMac
+    TargetMac = SensorMac
+    loop = asyncio.get_event_loop()
+    try:
+        loop.run_until_complete(async_query(SensorQueryDuration_s))
+    except KeyboardInterrupt:
+        print()
+        return
+    return(QueryResults)
+
+
+async def async_query(SensorQueryDuration_s):    
+    scanner = BleakScanner(query_callback)
+    await scanner.start()    
+    await asyncio.sleep(SensorQueryDuration_s)  
+    await scanner.stop()
+
+def query_callback(device, advertisement_data):
+    global QueryResults
+    global TargetMac
+    name = advertisement_data.local_name
+    if name is None:
+        return
+    if name != 'ThermoBeacon':
+        return
+    msg = advertisement_data.manufacturer_data    
+    for key in msg.keys():        
+        bvalue = msg[key]
+        mac = device.address.lower()
+        if mac != TargetMac:
+            continue
+        if len(bvalue)==18:
+            QueryResults.clear()
+            data = TBAdvData(key, bvalue)
+            QueryResults["mac"] = mac
+            QueryResults["temp"] = round(float(data.tmp),2)
+            QueryResults["relhum"] = round(float(data.hum),2)
+            QueryResults["button"] = data.btn
+            QueryResults["battery"] = round(float(data.btr),2)
+            QueryResults["uptime"] = int(data.upt)
+            QueryResults["mac"] = mac
+        else:
+            pass
+			#This data contains min and max values - ignore.
+            #data = TBAdvMinMax(key, bvalue)
+            #print('[{0}] [{5:02x}] Max={1:5.2f}\xb0C at {2:.0f}s, Min={3:5.2f}\xb0C at {4:.0f}s'.\
+            #      format(mac, data.max, data.max_t, data.min, data.min_t, data.id))
+
+
 if __name__ == '__main__':
     main()
 
