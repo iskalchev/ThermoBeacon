@@ -8,7 +8,7 @@
     $ sudo pip3 install paho-mqtt
 
 ## Usage
-    usage: tbcmd.py [-h] {scan,identify,query,dump} ...
+    usage: tbcmd.py [-h] {scan,identify,query,dump,mqtt} ...
     
     positional arguments:
       {scan,identify,query,dump}
