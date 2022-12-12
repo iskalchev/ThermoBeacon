@@ -4,10 +4,11 @@
 ### 1. This command line tool requires Python 3.7 or greater.
 ### 2. Install [bleak Python library](https://github.com/hbldh/bleak)
     $ sudo pip3 install bleak
-
+### 3. Install [paho-mqtt library](https://pypi.org/project/paho-mqtt/)
+    $ sudo pip3 install paho-mqtt
 
 ## Usage
-    usage: tbcmd.py [-h] {scan,identify,query,dump} ...
+    usage: tbcmd.py [-h] {scan,identify,query,dump,mqtt} ...
     
     positional arguments:
       {scan,identify,query,dump}
@@ -15,6 +16,7 @@
         scan                Scan for ThermoBeacon devices
         identify            Identify a device
         query               Query device for details
+        mqtt                Queries the values and then publishes via mqtt
         dump                Dump logged data
 
     optional arguments:
