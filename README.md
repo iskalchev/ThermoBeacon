@@ -11,13 +11,13 @@
     usage: tbcmd.py [-h] {scan,identify,query,dump,mqtt} ...
     
     positional arguments:
-      {scan,identify,query,dump}
+      {scan,identify,query,dump,mqtt}
                         action
         scan                Scan for ThermoBeacon devices
         identify            Identify a device
-        query               Query device for details
-        mqtt                Queries the values and then publishes via mqtt
         dump                Dump logged data
+        query               Query device for details
+        mqtt                Send data via mqtt
 
     optional arguments:
       -h, --help            show this help message and exit
