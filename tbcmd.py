@@ -75,8 +75,7 @@ def main():
 
 
 async def scan():
-    scanner = BleakScanner()
-    scanner.register_detection_callback(detection_callback)
+    scanner = BleakScanner(detection_callback)
     await scanner.start()
     await asyncio.sleep(540)
     await scanner.stop()
@@ -202,58 +201,57 @@ def send_mqtt(SensorMac, SensorQueryDuration_s, broker, port, topic):
 '''
 '''
 def query(SensorMac, SensorQueryDuration_s):
-	#Not sure how to return values from a BleakScanner::callback
-	#function. Thus using global variables.
-    global QueryResults
-    QueryResults = dict()
-    global TargetMac
-    TargetMac = SensorMac
+    proxy = QueryProxy(SensorMac)
+    
     loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(async_query(SensorQueryDuration_s))
+        loop.run_until_complete(async_query(SensorQueryDuration_s, proxy))
     except KeyboardInterrupt:
         print()
         return
-    return(QueryResults)
+    return(proxy.QueryResults)
 
 
-async def async_query(SensorQueryDuration_s):    
-    scanner = BleakScanner(query_callback)
+async def async_query(SensorQueryDuration_s, proxy):    
+    scanner = BleakScanner(proxy.query_callback)
     await scanner.start()    
     await asyncio.sleep(SensorQueryDuration_s)  
     await scanner.stop()
 
-def query_callback(device, advertisement_data):
-    global QueryResults
-    global TargetMac
-    name = advertisement_data.local_name
-    if name is None:
-        return
-    if name != 'ThermoBeacon':
-        return
-    msg = advertisement_data.manufacturer_data    
-    for key in msg.keys():        
-        bvalue = msg[key]
-        mac = device.address.lower()
-        if mac != TargetMac:
-            continue
-        if len(bvalue)==18:
-            QueryResults.clear()
-            data = TBAdvData(key, bvalue)
-            QueryResults["mac"] = mac
-            QueryResults["temp"] = round(float(data.tmp),2)
-            QueryResults["relhum"] = round(float(data.hum),2)
-            QueryResults["button"] = data.btn
-            QueryResults["battery"] = round(float(data.btr),2)
-            QueryResults["uptime"] = int(data.upt)
-            QueryResults["mac"] = mac
-        else:
-            pass
-			#This data contains min and max values - ignore.
-            #data = TBAdvMinMax(key, bvalue)
-            #print('[{0}] [{5:02x}] Max={1:5.2f}\xb0C at {2:.0f}s, Min={3:5.2f}\xb0C at {4:.0f}s'.\
-            #      format(mac, data.max, data.max_t, data.min, data.min_t, data.id))
-
+class QueryProxy:
+    def __init__(self, _target_mac):
+        self.QueryResults = dict()
+        self.TargetMac = _target_mac
+        
+    def query_callback(self, device, advertisement_data):
+        name = advertisement_data.local_name
+        if name is None:
+            return
+        if name != 'ThermoBeacon':
+            return
+        msg = advertisement_data.manufacturer_data    
+        for key in msg.keys():        
+            bvalue = msg[key]
+            mac = device.address.lower()
+            if mac != self.TargetMac:
+                continue
+            if len(bvalue)==18:
+                self.QueryResults.clear()
+                data = TBAdvData(key, bvalue)
+                self.QueryResults["mac"] = mac
+                self.QueryResults["temp"] = round(float(data.tmp),2)
+                self.QueryResults["relhum"] = round(float(data.hum),2)
+                self.QueryResults["button"] = data.btn
+                self.QueryResults["battery"] = round(float(data.btr),2)
+                self.QueryResults["uptime"] = int(data.upt)
+                self.QueryResults["mac"] = mac
+            else:
+                pass
+                            #This data contains min and max values - ignore.
+                #data = TBAdvMinMax(key, bvalue)
+                #print('[{0}] [{5:02x}] Max={1:5.2f}\xb0C at {2:.0f}s, Min={3:5.2f}\xb0C at {4:.0f}s'.\
+                #      format(mac, data.max, data.max_t, data.min, data.min_t, data.id))
+ 
 
 if __name__ == '__main__':
     main()
