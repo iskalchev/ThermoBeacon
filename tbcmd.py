@@ -5,7 +5,7 @@ from argparse import ArgumentParser, Namespace
 import bleak
 
 import paho.mqtt.client as mqtt
- 
+
 
 from bleak import BleakClient, BleakScanner
 from tb_protocol import *
@@ -15,9 +15,10 @@ TX_CHAR_UUID = '0000fff5-0000-1000-8000-00805F9B34FB'
 #Read Handle 0x0024
 RX_CHAR_UUID = '0000fff3-0000-1000-8000-00805F9B34FB'
 
-  
+
 def mac_addr(x):
-    if not re.match("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", x.lower()):
+    x = x.lower()
+    if not re.match("^(?:[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$", x):
         raise ValueError()
     return x
 
@@ -29,8 +30,6 @@ sub = subparsers.add_parser('scan', help = "Scan for ThermoBeacon devices")
 sub.add_argument('-mac', type=mac_addr, required=False)
 sub.add_argument('-t', type=int, default = 20, metavar='<Scan duration, seconds>', required=False)
 sub = subparsers.add_parser('identify', help = "Identify a device")
-sub.add_argument('-mac', type=mac_addr, required=True)
-sub = subparsers.add_parser('query', help = "Query device for details")
 sub.add_argument('-mac', type=mac_addr, required=True)
 sub = subparsers.add_parser('dump', help = "Dump logged data")
 sub.add_argument('-mac', type=mac_addr, required=True)
@@ -66,7 +65,7 @@ def main():
         dump(args.mac)
         return
     elif cmd=='query':
-        Result = query(args.mac, args.t)                
+        Result = query(args.mac, args.t)
         print(Result)
     elif cmd=='mqtt':
         send_mqtt(args.mac, args.t, args.broker, args.port, args.topic)
@@ -184,13 +183,13 @@ async def _identify(address):
         await client.disconnect()
 
 '''
-Thanks to Andreas Schmitz (Andy) two new commands implemented below: query, mqtt. 
+Thanks to Andreas Schmitz (Andy) two new commands implemented below: query, mqtt.
 The mqtt command queries the values and then publishes via mqtt
 '''
 def send_mqtt(SensorMac, SensorQueryDuration_s, broker, port, topic):
     Result = str(query(SensorMac, SensorQueryDuration_s))
     if len(Result) == 0:
-        return		
+        return
     client = mqtt.Client()
     client.connect(host = broker, port = port)
     #FIXME add user, passwd
@@ -202,7 +201,7 @@ def send_mqtt(SensorMac, SensorQueryDuration_s, broker, port, topic):
 '''
 def query(SensorMac, SensorQueryDuration_s):
     proxy = QueryProxy(SensorMac)
-    
+
     loop = asyncio.get_event_loop()
     try:
         loop.run_until_complete(async_query(SensorQueryDuration_s, proxy))
@@ -212,25 +211,25 @@ def query(SensorMac, SensorQueryDuration_s):
     return(proxy.QueryResults)
 
 
-async def async_query(SensorQueryDuration_s, proxy):    
+async def async_query(SensorQueryDuration_s, proxy):
     scanner = BleakScanner(proxy.query_callback)
-    await scanner.start()    
-    await asyncio.sleep(SensorQueryDuration_s)  
+    await scanner.start()
+    await asyncio.sleep(SensorQueryDuration_s)
     await scanner.stop()
 
 class QueryProxy:
     def __init__(self, _target_mac):
         self.QueryResults = dict()
         self.TargetMac = _target_mac
-        
+
     def query_callback(self, device, advertisement_data):
         name = advertisement_data.local_name
         if name is None:
             return
         if name != 'ThermoBeacon':
             return
-        msg = advertisement_data.manufacturer_data    
-        for key in msg.keys():        
+        msg = advertisement_data.manufacturer_data
+        for key in msg.keys():
             bvalue = msg[key]
             mac = device.address.lower()
             if mac != self.TargetMac:
@@ -251,7 +250,7 @@ class QueryProxy:
                 #data = TBAdvMinMax(key, bvalue)
                 #print('[{0}] [{5:02x}] Max={1:5.2f}\xb0C at {2:.0f}s, Min={3:5.2f}\xb0C at {4:.0f}s'.\
                 #      format(mac, data.max, data.max_t, data.min, data.min_t, data.id))
- 
+
 
 if __name__ == '__main__':
     main()
