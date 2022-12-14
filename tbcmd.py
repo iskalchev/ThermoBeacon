@@ -252,6 +252,7 @@ class QueryProxy:
                 #      format(mac, data.max, data.max_t, data.min, data.min_t, data.id))
 
 
+
 if __name__ == '__main__':
     main()
 
