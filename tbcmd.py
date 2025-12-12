@@ -52,9 +52,8 @@ args = parser.parse_args()
 def main():
     cmd = args.command
     if cmd=='scan':
-        loop = asyncio.get_event_loop()
         try:
-            loop.run_until_complete(scan())
+            asyncio.run(scan())
         except KeyboardInterrupt:
             print()
             return
@@ -105,8 +104,7 @@ def detection_callback(device, advertisement_data):
 '''
 def dump(address):
     try:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(_dump(address))
+        asyncio.run(_dump(address))
     except bleak.exc.BleakDBusError as dber:
         print(dber.dbus_error)
     except Exception as exc:
@@ -160,8 +158,7 @@ def dump_callback(sender: int, data: bytearray):
 '''
 def identify(address):
     try:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(_identify(address))
+        asyncio.run(_identify(address))
     except bleak.exc.BleakDBusError as dber:
         print(dber.dbus_error)
     except Exception as exc:
@@ -202,9 +199,8 @@ def send_mqtt(SensorMac, SensorQueryDuration_s, broker, port, topic):
 def query(SensorMac, SensorQueryDuration_s):
     proxy = QueryProxy(SensorMac)
 
-    loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(async_query(SensorQueryDuration_s, proxy))
+        asyncio.run(async_query(SensorQueryDuration_s, proxy))
     except KeyboardInterrupt:
         print()
         return
