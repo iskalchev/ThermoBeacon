@@ -6,6 +6,7 @@ import bleak
 
 import paho.mqtt.client as mqtt
 
+import json
 
 from bleak import BleakClient, BleakScanner
 from tb_protocol import *
@@ -65,7 +66,7 @@ def main():
         return
     elif cmd=='query':
         Result = query(args.mac, args.t)
-        print(Result)
+        print(json.dumps(Result))
     elif cmd=='mqtt':
         send_mqtt(args.mac, args.t, args.broker, args.port, args.topic)
     else:
